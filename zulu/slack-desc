@@ -1,0 +1,31 @@
+# HOW TO EDIT THIS FILE:
+# The "handy ruler" below makes it easier to edit a package description.  Line
+# up the first '|' above the ':' following the base package name, and the '|'
+# on the right side marks the last column you can put a character in.  You must
+# make exactly 11 lines for the formatting to be correct.  It's also
+# customary to leave one space after the ':'.
+
+    |-----handy-ruler----------------------------------------------------|
+zulu: Azul® Zulu® (Multi-platform Certified OpenJDK)
+zulu:
+zulu: Azul® Zulu® is an enterprise-quality, certified build of OpenJDK
+zulu: that can be deployed across various operating systems, Docker
+zulu: containers, hypervisors and Cloud platforms.  Companies, Java
+zulu: developers, systems administrators and end users can now enjoy the
+zulu: full benefits of freely-available 100% open-source Java with the
+zulu: comfort of world-class support provided by the only company 100%
+zulu: dedicated to Java and the Java Virtual Machine (JVM).
+zulu: 
+zulu: Homepage:  http://www.azulsystems.com/products/zulu
+
+
+
+
+
+      
+      
+      
+      
+      
+      
+      

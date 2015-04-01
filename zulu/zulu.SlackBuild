@@ -1,0 +1,110 @@
+#!/bin/sh
+
+# Copyright 2009-2010  Erik Hanson, Minneapolis, MN, USA
+# Copyright 2011  Patrick J. Volkerding, Sebeka, MN, USA
+# Copyright 2015  Ricardo Nabinger Sanchez, Porto Alegre, RS, Brazil
+# All rights reserved.
+#
+# Redistribution and use of this script, with or without modification, is
+# permitted provided that the following conditions are met:
+#
+# 1. Redistributions of this script must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHOR ''AS IS'' AND ANY EXPRESS OR IMPLIED
+# WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+# EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+# OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+# OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+# ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+PKGNAM=zulu
+RELEASE=${RELEASE:-1.8.0_31-8.5.0.1}
+BUILD=${BUILD:-1}
+
+CWD=$(pwd)
+TMP=${TMP:-/tmp}
+PKG=$TMP/package-$PKGNAM
+OUTPUT=${OUTPUT:-/tmp}
+
+
+# Grab arch, but there doesn't seem to be a 32-bit release.
+ARCH=${ARCH:-$(uname -m)}
+
+case "$ARCH" in
+  x86_64) DEBARCH="x86lx64" ; LIBDIRSUFFIX="64" ; ARCH=x86_64 ;;
+  *) echo "Package for $(uname -m) architecture is not available." ; exit 1 ;;
+esac
+
+DEBFILE="zulu${RELEASE}-${DEBARCH}.deb"
+
+# Get the version from the Debian/Ubuntu .deb (thanks to Fred Richards):
+VERSION=$(ar p ${DEBFILE} control.tar.gz 2> /dev/null | tar zxO ./control 2> /dev/null | awk '/Version/{print $2}' | cut -d- -f1)
+
+
+if [ ! $UID = 0 ]; then
+  cat << EOF
+
+This script must be run as root.
+
+EOF
+  exit 1
+fi
+
+if ! /bin/ls zulu*.deb 1> /dev/null 2> /dev/null ; then
+  cat << EOF
+
+This is a script to repackage a Debian/Ubuntu Zulu OpenJDK .deb package
+for Slackware.  Run this script in the same directory as the binary
+package:
+
+  zulu1.8.0_31-8.5.0.1-x86lx64.deb  (for 64-bit x86_64)
+
+This will create a Slackware .txz package.  Install it with installpkg
+or use upgradepkg to upgrade from a previous version.
+
+EOF
+  exit 1
+fi
+
+
+# Let the work begin.
+rm -rf $PKG
+mkdir -p $TMP $PKG $OUTPUT
+cd $PKG
+ar p $CWD/${DEBFILE} data.tar.gz | tar xvz || exit 1
+chown -R root:root .
+chmod -R u+w,go+r-w,a-s .
+
+# Make sure top-level perms are correct:
+chmod 0755 .
+
+# --mandir=/usr/man:
+mv $PKG/usr/lib/jvm/zulu-8-amd64/man $PKG/usr/man
+# Compress manual pages:
+find $PKG/usr/man -type f -exec gzip -9 {} \;
+for i in $( find $PKG/usr/man -type l ) ; do
+  ln -s $( readlink $i ).gz $i.gz
+  rm $i
+done
+
+# Use lib64.
+mv $PKG/usr/lib $PKG/usr/lib64
+
+mkdir -p $PKG/install
+cat $CWD/slack-desc > $PKG/install/slack-desc
+
+# Environment variables
+mkdir -p $PKG/etc/profile.d
+cat $CWD/profile.d/zulu.sh > $PKG/etc/profile.d/zulu.sh
+cat $CWD/profile.d/zulu.csh > $PKG/etc/profile.d/zulu.csh
+chmod 0755 $PKG/etc/profile.d/zulu.*
+
+cd $PKG
+/sbin/makepkg -l y -c n $OUTPUT/$PKGNAM-$VERSION-$ARCH-$BUILD.txz
+
